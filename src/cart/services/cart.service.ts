@@ -1,31 +1,44 @@
 import { Injectable } from '@nestjs/common';
-
+import format from 'pg-format';
 import { v4 } from 'uuid';
 
+import { DbService } from '../../db';
 import { Cart } from '../models';
 
 @Injectable()
 export class CartService {
-  private userCarts: Record<string, Cart> = {};
+  constructor(private dbService: DbService) {}
 
-  findByUserId(userId: string): Cart {
-    return this.userCarts[ userId ];
+  async findByUserId(userId: string): Promise<Cart> {
+    const data = await this.dbService.query<Cart>(
+      'select * from cart where user_id = $1',
+      [userId],
+    );
+
+    return data.rows[0];
   }
 
-  createByUserId(userId: string) {
+  async createByUserId(userId: string) {
     const id = v4();
-    const userCart = {
-      id,
-      items: [],
-    };
 
-    this.userCarts[ userId ] = userCart;
+    const date = new Date().toISOString();
 
-    return userCart;
+    let result;
+
+    try {
+      result = await this.dbService.query<Cart>(
+        'insert into cart (id, user_id, created_at, updated_at, status) values ($1, $2, $3, $4, $5)',
+        [id, userId, date, date, 'OPEN'],
+      );
+
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
   }
 
-  findOrCreateByUserId(userId: string): Cart {
-    const userCart = this.findByUserId(userId);
+  async findOrCreateByUserId(userId: string): Promise<Cart> {
+    const userCart = await this.findByUserId(userId);
 
     if (userCart) {
       return userCart;
@@ -34,22 +47,33 @@ export class CartService {
     return this.createByUserId(userId);
   }
 
-  updateByUserId(userId: string, { items }: Cart): Cart {
-    const { id, ...rest } = this.findOrCreateByUserId(userId);
+  async updateByUserId(userId: string, { items }: Cart): Promise<Cart> {
+    const { id, ...rest } = await this.findOrCreateByUserId(userId);
 
     const updatedCart = {
       id,
       ...rest,
-      items: [ ...items ],
-    }
+      items: [...items],
+    };
 
-    this.userCarts[ userId ] = { ...updatedCart };
+    const values = items.map(({ product, count }) => [id, product.id, count]);
+
+    const result = format(
+      'insert into cart_item (cart_id, product_id, count) values %L',
+      values,
+    );
+
+    await this.dbService.query<Cart>(
+      `begin; delete from cart_item where cart_id = $1; ${result}; commit;`,
+      [id],
+    );
 
     return { ...updatedCart };
   }
 
-  removeByUserId(userId): void {
-    this.userCarts[ userId ] = null;
+  async removeByUserId(userId): Promise<void> {
+    await this.dbService.query<Cart>('delete from cart where user_id = $1', [
+      userId,
+    ]);
   }
-
 }
