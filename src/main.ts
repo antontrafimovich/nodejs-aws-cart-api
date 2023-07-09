@@ -1,41 +1,37 @@
-import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { ExpressAdapter } from '@nestjs/platform-express';
-import { createServer, proxy, Response } from '@vendia/serverless-express';
-import express from 'express';
-import { Server } from 'http';
+import serverlessExpress from '@vendia/serverless-express';
+import 'dotenv/config';
 
 import { AppModule } from './app.module';
+import helmet from 'helmet';
 
-export async function createApp(
-  expressApp: express.Express,
-): Promise<INestApplication> {
-  const app = await NestFactory.create(
-    AppModule,
-    new ExpressAdapter(expressApp),
-  );
+// let server: any;
 
-  app.init();
+// async function bootstrap(): Promise<any> {
+//   const app = await NestFactory.create(AppModule);
+//   await app.init();
 
-  return app;
+//   const expressApp = app.getHttpAdapter().getInstance();
+//   return serverlessExpress({ app: expressApp });
+// }
+
+// export const handler = async (event: any, context: any, callback: any) => {
+//   server = server ?? (await bootstrap());
+//   return server(event, context, callback);
+// };
+
+const port = process.env.PORT || 4000;
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.enableCors({
+    origin: (req, callback) => callback(null, true),
+  });
+  app.use(helmet());
+
+  await app.listen(port);
 }
-
-let cachedServer: Server;
-
-async function bootstrap(): Promise<Server> {
-  const expressApp = express();
-
-  const app = await createApp(expressApp);
-  await app.init();
-
-  return createServer(expressApp);
-}
-
-export async function handler(event: any, context): Promise<Response> {
-  if (!cachedServer) {
-    const server = await bootstrap();
-    cachedServer = server;
-  }
-
-  return proxy(cachedServer, event, context, 'PROMISE').promise;
-}
+bootstrap().then(() => {
+  console.log('App is running on %s port', port);
+});
