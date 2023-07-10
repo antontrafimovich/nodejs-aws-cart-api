@@ -1,9 +1,24 @@
 import { Injectable } from '@nestjs/common';
+import axios from 'axios';
 import format from 'pg-format';
 import { v4 } from 'uuid';
 
 import { DbService } from '../../db';
 import { Cart } from '../models';
+
+type CartItemRemote = {
+  cart_id: string;
+  product_id: string;
+  count: number;
+};
+
+type ProductRemote = {
+  description: string;
+  id: string;
+  price: number;
+  title: string;
+  count: number;
+};
 
 @Injectable()
 export class CartService {
@@ -15,7 +30,37 @@ export class CartService {
       [userId],
     );
 
-    return data.rows[0];
+    const cart = data.rows[0];
+
+    const itemsResult = await this.dbService.query<CartItemRemote>(
+      'select * from cart_item where cart_id = $1',
+      [cart.id],
+    );
+    const cartItems = itemsResult.rows;
+
+    const prodcutsResult = await axios<ProductRemote[]>(
+      'https://i9m60vpkm1.execute-api.us-east-1.amazonaws.com/products',
+      { method: 'GET' },
+    );
+    const prodcutsJson = prodcutsResult.data;
+
+    return {
+      id: cart.id,
+      items: cartItems.map((item) => {
+        const product = prodcutsJson.find(
+          (product) => product.id === item.product_id,
+        );
+        return {
+          count: product.count,
+          product: {
+            id: product.id,
+            title: product.title,
+            description: product.description,
+            price: product.price,
+          },
+        };
+      }),
+    };
   }
 
   async createByUserId(userId: string) {
