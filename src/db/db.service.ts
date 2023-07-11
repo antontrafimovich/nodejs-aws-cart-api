@@ -1,14 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Client, QueryResult } from 'pg';
 
 @Injectable()
 export class DbService {
-  private client = new Client();
-  private connectPromise = this.client.connect();
+  constructor(@Inject('PG_CLIENT') private client: Client) {}
 
   async query<T>(queryText: string, values?: any[]): Promise<QueryResult<T>> {
-    await this.connectPromise;
-
     return this.client.query(queryText, values);
   }
 }
