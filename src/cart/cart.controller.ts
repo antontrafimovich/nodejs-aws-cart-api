@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { BasicAuthGuard, JwtAuthGuard, LocalAuthGuard } from '../auth';
+import { BasicAuthGuard } from '../auth';
 import { OrderService } from '../order';
 import { AppRequest, getUserIdFromRequest } from '../shared';
 import { calculateCartTotal } from './models-rules';
@@ -25,7 +25,7 @@ export class CartController {
   ) {}
 
   // @UseGuards(JwtAuthGuard)
-  @UseGuards(LocalAuthGuard)
+  @UseGuards(BasicAuthGuard)
   @Get()
   async findUserCart(@Req() req: AppRequest) {
     const cart = await this.cartService.findOrCreateByUserId(
@@ -40,7 +40,7 @@ export class CartController {
   }
 
   // @UseGuards(JwtAuthGuard)
-  @UseGuards(LocalAuthGuard)
+  @UseGuards(BasicAuthGuard)
   @Put()
   async updateUserCart(@Req() req: AppRequest, @Body() body) {
     // TODO: validate body payload...
@@ -60,7 +60,7 @@ export class CartController {
   }
 
   // @UseGuards(JwtAuthGuard)
-  @UseGuards(LocalAuthGuard)
+  @UseGuards(BasicAuthGuard)
   @Delete()
   async clearUserCart(@Req() req: AppRequest) {
     await this.cartService.removeByUserId(getUserIdFromRequest(req));
@@ -72,7 +72,7 @@ export class CartController {
   }
 
   // @UseGuards(JwtAuthGuard)
-  @UseGuards(LocalAuthGuard)
+  @UseGuards(BasicAuthGuard)
   @Post('checkout')
   async checkout(@Req() req: AppRequest, @Body() body) {
     const userId = getUserIdFromRequest(req);
