@@ -10,13 +10,11 @@ type a = keyof OrderRemote;
 
 @Injectable()
 export class OrderService {
-  private orders: Record<string, Order> = {};
-
   constructor(private dbService: DbService) {}
 
   async findById(orderId: string): Promise<Order> {
     const data = await this.dbService.query<OrderRemote>(
-      'select * from cart where user_id = $1',
+      'select * from orders where user_id = $1',
       [orderId],
     );
 
@@ -36,7 +34,8 @@ export class OrderService {
 
     const result = await this.dbService.query<OrderRemote>(
       format(
-        `insert into cart (${Object.keys(remoteOrder).toString()} %L)`,
+        `insert into orders %I %L`,
+        Object.keys(remoteOrder).toString(),
         Object.values(remoteOrder),
       ),
     );
@@ -58,12 +57,16 @@ export class OrderService {
       id: orderId,
     });
 
-    const result = await this.dbService.query<OrderRemote>(
-      format(
-        `insert into cart (${Object.keys(updatedOrderRemote).toString()} %L)`,
-        Object.values(updatedOrderRemote),
-      ),
-    );
+    const columns = Object.keys(updatedOrderRemote);
+    const values = Object.values(updatedOrderRemote);
+
+    const sets = columns.map((column, index) => {
+      return `${column} = $${index + 1}`;
+    });
+
+    const query = format(`UPDATE %I SET %s`, 'orders', sets.join(', '));
+
+    const result = await this.dbService.query<OrderRemote>(query);
 
     console.log(result);
 
