@@ -51,7 +51,7 @@ export class CartService {
           (product) => product.id === item.product_id,
         );
         return {
-          count: product.count,
+          count: item.count,
           product: {
             id: product.id,
             title: product.title,
@@ -103,14 +103,15 @@ export class CartService {
 
     const values = items.map(({ product, count }) => [id, product.id, count]);
 
-    const result = format(
+    const deleteQuery = format('delete from cart_item where cart_id=%L', id);
+
+    const insertQuery = format(
       'insert into cart_item (cart_id, product_id, count) values %L',
       values,
     );
 
-    await this.dbService.query<Cart>(
-      `begin; delete from cart_item where cart_id = $1; ${result}; commit;`,
-      [id],
+    const result = await this.dbService.query<Cart>(
+      `begin; ${deleteQuery}; ${insertQuery}; commit;`,
     );
 
     return { ...updatedCart };
