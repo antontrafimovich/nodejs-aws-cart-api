@@ -117,6 +117,13 @@ export class CartService {
     return { ...updatedCart };
   }
 
+  public async checkout(userId: string) {
+    await this.dbService.query(
+      'update cart set status = $1 where user_id = $2',
+      ['ORDERED', userId],
+    );
+  }
+
   async removeByUserId(userId): Promise<void> {
     await this.dbService.query<Cart>('delete from cart where user_id = $1', [
       userId,
