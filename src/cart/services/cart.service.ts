@@ -32,6 +32,10 @@ export class CartService {
 
     const cart = data.rows[0];
 
+    if (!cart) {
+      return null;
+    }
+
     const itemsResult = await this.dbService.query<CartItemRemote>(
       'select * from cart_item where cart_id = $1',
       [cart.id],
