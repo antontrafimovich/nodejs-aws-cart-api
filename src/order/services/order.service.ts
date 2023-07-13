@@ -62,9 +62,7 @@ export class OrderService {
 
     const query = format(`UPDATE %I SET %s`, 'orders', sets.join(', '));
 
-    const result = await this.dbService.query<OrderRemote>(query);
-
-    console.log(result);
+    await this.dbService.query<OrderRemote>(query, values);
 
     return updatedOrderRemote;
   }
