@@ -14,8 +14,12 @@ export const mapModelToRemote = (order: Order): OrderRemote => {
   const { cartId, userId, ...rest } = order;
 
   return {
-    ...rest,
     user_id: userId,
     cart_id: cartId,
+    delivery: rest.delivery,
+    payment: rest.payment,
+    comments: rest.comments,
+    status: rest.status,
+    total: rest.total,
   } as OrderRemote;
 };

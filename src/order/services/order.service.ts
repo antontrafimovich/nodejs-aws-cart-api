@@ -6,8 +6,6 @@ import { DbService } from '../../db';
 import { Order, OrderRemote } from '../models';
 import { mapModelToRemote, mapRemoteToModel } from './order.data-mapper';
 
-type a = keyof OrderRemote;
-
 @Injectable()
 export class OrderService {
   constructor(private dbService: DbService) {}
@@ -32,15 +30,13 @@ export class OrderService {
 
     const remoteOrder = mapModelToRemote(order);
 
-    const result = await this.dbService.query<OrderRemote>(
+    await this.dbService.query<OrderRemote>(
       format(
-        `insert into orders %I %L`,
-        Object.keys(remoteOrder).toString(),
+        `insert into orders (%I) values (%L)`,
+        Object.keys(remoteOrder),
         Object.values(remoteOrder),
       ),
     );
-
-    console.log(result);
 
     return order;
   }

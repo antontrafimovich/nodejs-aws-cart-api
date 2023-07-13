@@ -20,7 +20,6 @@ export type Order = {
 };
 
 export type OrderRemote = {
-  id: string;
   user_id: string;
   cart_id: string;
   payment: Record<string, any>;
