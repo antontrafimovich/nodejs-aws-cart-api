@@ -1,21 +1,37 @@
 import { NestFactory } from '@nestjs/core';
-
-import helmet from 'helmet';
+import serverlessExpress from '@vendia/serverless-express';
+import 'dotenv/config';
 
 import { AppModule } from './app.module';
+import helmet from 'helmet';
 
-const port = process.env.PORT || 4000;
+let server: any;
 
-async function bootstrap() {
+async function bootstrap(): Promise<any> {
   const app = await NestFactory.create(AppModule);
+  await app.init();
 
-  app.enableCors({
-    origin: (req, callback) => callback(null, true),
-  });
-  app.use(helmet());
-
-  await app.listen(port);
+  const expressApp = app.getHttpAdapter().getInstance();
+  return serverlessExpress({ app: expressApp });
 }
-bootstrap().then(() => {
-  console.log('App is running on %s port', port);
-});
+
+export const handler = async (event: any, context: any) => {
+  server = server ?? (await bootstrap());
+  return server(event, context);
+};
+
+// const port = process.env.PORT || 4000;
+
+// async function bootstrap() {
+//   const app = await NestFactory.create(AppModule);
+
+//   app.enableCors({
+//     origin: (req, callback) => callback(null, true),
+//   });
+//   app.use(helmet());
+
+//   await app.listen(port);
+// }
+// bootstrap().then(() => {
+//   console.log('App is running on %s port', port);
+// });
